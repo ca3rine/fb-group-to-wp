@@ -75,7 +75,7 @@ class WeDevs_FB_Group_To_WP {
         add_action( 'fbgr2wp_import', array( $this, 'do_import' ) );
 
         add_filter( 'the_content', array( $this, 'the_content' ) );
-
+        add_filter( 'pre_get_posts', array($this, 'my_get_posts') );
         if ( is_admin() ) {
             new WeDevs_FB_Group_To_WP_Admin();
         }
@@ -131,12 +131,8 @@ class WeDevs_FB_Group_To_WP {
         );
 
         register_post_type( $this->post_type, $args );
-        add_filter( 'pre_get_posts', 'my_get_posts' );
-        function my_get_posts( $query ) {
-            if ( is_home() && $query->is_main_query())
-                $query->set( 'post_type', array( 'post', 'page', 'fb_group_post' ) );
-            return $query;
-        }
+        
+
     }
 
     /**
@@ -413,7 +409,12 @@ class WeDevs_FB_Group_To_WP {
             }
         }
     }
-
+    // this function adds our custom page to the home page.
+    function my_get_posts( $query ) {
+        if ( is_home() && $query->is_main_query())
+            $query->set( 'post_type', array( 'post', 'fb_group_post' ) );
+        return $query;
+    }
     /**
      * Adds author, post and group link to the end of the post
      * 
