@@ -70,7 +70,8 @@ class WeDevs_FB_Group_To_WP {
 
         // Localize our plugin
         add_action( 'init', array( $this, 'localization_setup' ) );
-        add_action( 'init', array( $this, 'debug_run' ) );
+        // add_action( 'init', array( $this, 'debug_run' ) );
+        add_action('init', array($this, 'publish_post'));
         add_action( 'init', array( $this, 'register_post_type' ) );
         add_action( 'fbgr2wp_import', array( $this, 'do_import' ) );
 
@@ -183,6 +184,7 @@ class WeDevs_FB_Group_To_WP {
     }
 
     function debug_run() {
+        
         if ( !isset( $_GET['fb2wp_test'] ) ) {
             return;
         }
@@ -191,7 +193,18 @@ class WeDevs_FB_Group_To_WP {
 
         die();
     }
-    
+    /**
+    * This should be used to publish a draft Facebook post
+    * The GET param should contain the value of the wordpress post ID
+    * These links are followed through by Email, and are generated every 2 days by a cron job that looks for draft posts
+    * Email is sent to admins
+    */
+    function publish_post() {
+        if ( isset( $_GET['fb_post_publish'] ) ) {
+            self::log('debug', print_r($_GET, TRUE));
+        }
+    }
+
     function get_settings() {
         $option = get_option( 'fbgr2wp_settings', array() );
 
@@ -341,7 +354,7 @@ class WeDevs_FB_Group_To_WP {
             'post_status' => 'publish',
             'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
             'post_author' => 1,
-            'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( $fb_post->created_time ) ),
+            'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( $fb_post->updated_time ) ),
             'guid' => $fb_post->actions[0]->link
         );
 
