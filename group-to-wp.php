@@ -166,6 +166,7 @@ class WeDevs_FB_Group_To_WP {
      */
     public function deactivate() {
         wp_clear_scheduled_hook( 'fbgr2wp_import' );
+        $this->trash_all(); //FIX ME. This is just for development.
     }
 
     /**
@@ -382,9 +383,10 @@ class WeDevs_FB_Group_To_WP {
         }
 
         // var_dump( $fb_post );
-        // var_dump( $postarr );
+        // self::log('debug', print_r($postarr));
         // var_dump( $meta );
 
+        self::log('debug','post is being inserted');
         return $post_id;
     }
 
