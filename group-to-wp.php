@@ -115,6 +115,7 @@ class WeDevs_FB_Group_To_WP {
             'description'         => __( 'WordPress Group Post', 'fbgr2wp' ),
             'labels'              => $labels,
             'supports'            => array( 'title', 'editor', 'post-formats', ),
+            'taxonomies'          => array( 'category', 'post_tag' ),
             'hierarchical'        => false,
             'public'              => true,
             'show_ui'             => true,
@@ -130,6 +131,12 @@ class WeDevs_FB_Group_To_WP {
         );
 
         register_post_type( $this->post_type, $args );
+        add_filter( 'pre_get_posts', 'my_get_posts' );
+        function my_get_posts( $query ) {
+            if ( is_home() && $query->is_main_query())
+                $query->set( 'post_type', array( 'post', 'page', 'fb_group_post' ) );
+            return $query;
+        }
     }
 
     /**
