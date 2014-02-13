@@ -160,6 +160,7 @@ class WeDevs_FB_Group_To_WP {
         if ( false == wp_next_scheduled( 'fbgr2wp_import' ) ){
             wp_schedule_event( time(), 'hourly', 'fbgr2wp_import' );
         }
+        wp_create_category('Cardiff Start Facebook Posts');
     }
 
     /**
@@ -322,6 +323,7 @@ class WeDevs_FB_Group_To_WP {
         $postarr = array(
             'post_type' => $this->post_type,
             'post_status' => 'publish',
+            'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
             'post_author' => 1,
             'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( $fb_post->created_time ) ),
             'guid' => $fb_post->actions[0]->link
@@ -411,7 +413,7 @@ class WeDevs_FB_Group_To_WP {
     }
     // this function adds our custom page to the home page.
     function my_get_posts( $query ) {
-        if ( is_home() && $query->is_main_query())
+        if ($query->is_main_query())
             $query->set( 'post_type', array( 'post', 'fb_group_post' ) );
         return $query;
     }

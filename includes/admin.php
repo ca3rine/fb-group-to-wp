@@ -69,6 +69,12 @@ class WeDevs_FB_Group_To_WP_Admin {
                 'label' => __( 'Facebook Group ID', 'fbgr2wp'),
                 'default' => '',
                 'desc' => __( 'Add your facebook group ID. e.g: 241884142616448' )
+            ),
+            array(
+                'name' => 'cat_id',
+                'label' => __( 'Category ID', 'fbgr2wp'),
+                'default' => '',
+                'desc' => __( 'Add your wordpress category ID' )
             )
         );
 
