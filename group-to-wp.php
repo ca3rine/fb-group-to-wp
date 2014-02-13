@@ -275,7 +275,11 @@ class WeDevs_FB_Group_To_WP {
         if ( $group_posts ) {
             foreach ($group_posts as $fb_post) {
                 $post_id = $this->insert_post( $fb_post, $group_id );
-
+                if (property_exists($fb_post, 'comments')) {
+                    $comment_id = $this->insert_comments($post_id, $fb_post->comments->data);
+                }
+                
+                self::log('debug','comment is being inserted with DBID '.$comment_id);
                 if ( $post_id ) {
                     $count++;
                 }
@@ -298,6 +302,18 @@ class WeDevs_FB_Group_To_WP {
         global $wpdb;
 
         $row = $wpdb->get_row( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE guid = %s AND post_status = 'publish'", $fb_link_id ) );
+
+        if ( $row ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    function is_comment_exists($fb_comment_id) {
+        global $wpdb;
+
+        $row = $wpdb->get_row( $wpdb->prepare( "SELECT meta_id FROM $wpdb->commentmeta WHERE meta_key = '_fb_comment_id' AND meta_value = %s", $fb_comment_id) );
 
         if ( $row ) {
             return true;
@@ -388,12 +404,60 @@ class WeDevs_FB_Group_To_WP {
         }
 
         // var_dump( $fb_post );
-        // self::log('debug', print_r($postarr));
+        // self::log('debug', print_r($fb_post, TRUE));
         // var_dump( $meta );
 
         self::log('debug','post is being inserted');
         return $post_id;
     }
+
+    function insert_comments($post_id, $fb_comments) {
+        $count = 0;
+        
+        if ( $fb_comments ) {
+            foreach ($fb_comments as $fb_comment) {
+                // self::log('debug', print_r($fb_comment, TRUE));
+                $comment_id = $this->insert_comment($post_id, $fb_comment );
+
+                if ( $comment_id ) {
+                    $count++;
+                }
+            }
+        }
+        
+        return $count;
+    }
+
+    function insert_comment($post_id, $fb_comment) {
+
+        // bail out if the post already exists
+        if ( $this->is_comment_exists( $fb_comment->id )) {
+            return;
+        }
+
+        $commentarr = array(
+            'comment_post_ID' => $post_id,
+            'comment_author' => $fb_comment->from->name,
+            'comment_content' => $fb_comment->message,
+            'comment_date' => gmdate( 'Y-m-d H:i:s', strtotime( $fb_comment->created_time ) ),
+            'comment_approved' => 1,
+        );
+        $meta = array(
+            '_fb_author_id' => $fb_comment->from->id,
+            '_fb_author_name' => $fb_comment->from->name,
+            '_fb_comment_id' => $fb_comment->id
+        );
+
+        $comment_id = wp_insert_comment($commentarr);
+        if ( $comment_id && !is_wp_error( $comment_id ) ) {
+            foreach ($meta as $key => $value) {
+                update_comment_meta( $comment_id, $key, $value );
+            }
+        }
+        self::log('debug','comment is being inserted with FBID '.$fb_comment->id);
+        return $comment_id;
+    }
+
 
     /**
      * Trash all imported posts
