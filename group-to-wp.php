@@ -204,19 +204,18 @@ class WeDevs_FB_Group_To_WP {
             $my_post = array(
               'ID'           => $_GET['fb_post_publish'],
               'post_status'  => 'publish',
-              'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
             );
-            wp_insert_post($my_post);
-            // wp_publish_post($_GET['fb_post_publish']);
-            // wp_set_object_terms( $_GET['fb_post_publish'], array(get_cat_ID('Cardiff Start Facebook Posts')), 'category' );
-
+            //update the custom post type with this category and append it, since as a draft it has not category.
+            wp_set_object_terms( $_GET['fb_post_publish'], array(get_cat_ID('Cardiff Start Facebook Posts')), 'category',true );
+            //publish the post
+            wp_update_post($my_post);
         }
         if ( isset( $_GET['fb_send_mail'] ) ) {
             $this->send_mail();
         }
     }
     function send_mail() {
-        $query = new WP_Query( array( 'post_type' => $this->post_type, 'posts_per_page' => -1, 'post_status' => 'pending' ) );
+        $query = new WP_Query( array( 'post_type' => $this->post_type, 'posts_per_page' => -1, 'post_status' => 'draft' ) );
         if ( $query->have_posts()) {
             // get html file contents into string
             $html = file_get_contents(dirname( __FILE__ ) . '/includes/html_template.html');
@@ -229,8 +228,8 @@ class WeDevs_FB_Group_To_WP {
             $template = '<h2>%s</h2><h4>%s</h4><a href="%s" target="_blank">Publish</a><br /><br />';
             $all_posts = $query->get_posts();
             $count_posts = count($all_posts);
-            self::log('debug', print_r($all_posts, TRUE));
             foreach ($all_posts as $post) {
+                self::log('debug', print_r(get_site_url().'/?fb_post_publish='.$post->ID, TRUE));            
                 $message = $message.sprintf($template, $post->post_title, substr($post->post_content,0, 80), get_site_url().'/?fb_post_publish='.$post->ID);
             }
             $search = array(
@@ -246,7 +245,7 @@ class WeDevs_FB_Group_To_WP {
             add_filter( 'wp_mail_content_type', function($content_type){
                 return 'text/html';
             });
-            wp_mail( $multiple_to_recipients, $count_posts.' Cardiff Start Facebook Posts', $content );
+            // wp_mail( $multiple_to_recipients, $count_posts.' Cardiff Start Facebook Posts', $content );
 
             // Reset content-type to avoid conflicts -- http://core.trac.wordpress.org/ticket/23578
             remove_filter( 'wp_mail_content_type', function($content_type){
@@ -340,11 +339,8 @@ class WeDevs_FB_Group_To_WP {
             foreach ($group_posts as $fb_post) {
                 $post_id = $this->insert_post( $fb_post, $group_id );
                 if (property_exists($fb_post, 'comments')) {
-                    $comment_id = $this->insert_comments($post_id, $fb_post->comments->data);
-                    self::log('debug','comment is being inserted with DBID '.$comment_id);
+                    $comments = $this->insert_comments($post_id, $fb_post->comments->data);
                 }
-                
-                
                 if ( $post_id ) {
                     $count++;
                 }
@@ -403,7 +399,7 @@ class WeDevs_FB_Group_To_WP {
 
         $postarr = array(
             'post_type' => $this->post_type,
-            'post_status' => 'publish',
+            'post_status' => 'draft',
             'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
             'post_author' => 1,
             'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( $fb_post->updated_time ) ),
@@ -481,8 +477,8 @@ class WeDevs_FB_Group_To_WP {
         
         if ( $fb_comments ) {
             foreach ($fb_comments as $fb_comment) {
-                // self::log('debug', print_r($fb_comment, TRUE));
                 $comment_id = $this->insert_comment($post_id, $fb_comment );
+                
 
                 if ( $comment_id ) {
                     $count++;
@@ -520,7 +516,6 @@ class WeDevs_FB_Group_To_WP {
                 update_comment_meta( $comment_id, $key, $value );
             }
         }
-        self::log('debug','comment is being inserted with FBID '.$fb_comment->id);
         return $comment_id;
     }
 
@@ -539,7 +534,6 @@ class WeDevs_FB_Group_To_WP {
             foreach ($all_posts as $post) {
                 $c_query = new WP_Comment_Query();
                 $comments = $c_query->query(array('post_id'=>$post->ID));
-                self::log('debug', print_r($comments, TRUE));
                 if ($comments) {
                     foreach($comments as $comment) {
 
