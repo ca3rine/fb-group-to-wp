@@ -70,7 +70,7 @@ class WeDevs_FB_Group_To_WP {
 
         // Localize our plugin
         add_action( 'init', array( $this, 'localization_setup' ) );
-        // add_action( 'init', array( $this, 'debug_run' ) );
+        add_action( 'init', array( $this, 'debug_run' ) );
         add_action('init', array($this, 'publish_post'));
         add_action( 'init', array( $this, 'register_post_type' ) );
         add_action( 'fbgr2wp_import', array( $this, 'do_import' ) );
@@ -201,24 +201,22 @@ class WeDevs_FB_Group_To_WP {
     */
     function publish_post() {
         if ( isset( $_GET['fb_post_publish'] ) ) {
-            
-            // $my_post = array(
-            //   'ID'           => $_GET['fb_post_publish'],
-            //   'post_status'  => 'publish',
-            //   'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
-            // );
-            wp_publish_post($_GET['fb_post_publish']);
-            wp_set_object_terms( $_GET['fb_post_publish'], array(get_cat_ID('Cardiff Start Facebook Posts')), 'category' );
+            $my_post = array(
+              'ID'           => $_GET['fb_post_publish'],
+              'post_status'  => 'publish',
+              'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
+            );
+            wp_insert_post($my_post);
+            // wp_publish_post($_GET['fb_post_publish']);
+            // wp_set_object_terms( $_GET['fb_post_publish'], array(get_cat_ID('Cardiff Start Facebook Posts')), 'category' );
 
-            // self::log('debug', print_r($_GET, TRUE));
-            // $this->send_mail();
         }
         if ( isset( $_GET['fb_send_mail'] ) ) {
             $this->send_mail();
         }
     }
     function send_mail() {
-        $query = new WP_Query( array( 'post_type' => $this->post_type, 'posts_per_page' => -1, 'post_status' => 'draft' ) );
+        $query = new WP_Query( array( 'post_type' => $this->post_type, 'posts_per_page' => -1, 'post_status' => 'pending' ) );
         if ( $query->have_posts()) {
             // get html file contents into string
             $html = file_get_contents(dirname( __FILE__ ) . '/includes/html_template.html');
@@ -231,6 +229,7 @@ class WeDevs_FB_Group_To_WP {
             $template = '<h2>%s</h2><h4>%s</h4><a href="%s" target="_blank">Publish</a><br /><br />';
             $all_posts = $query->get_posts();
             $count_posts = count($all_posts);
+            self::log('debug', print_r($all_posts, TRUE));
             foreach ($all_posts as $post) {
                 $message = $message.sprintf($template, $post->post_title, substr($post->post_content,0, 80), get_site_url().'/?fb_post_publish='.$post->ID);
             }
@@ -254,7 +253,7 @@ class WeDevs_FB_Group_To_WP {
                 return 'text/html';
             });
 
-
+            self::log('debug', 'Email sent');
         }
     }
     function get_settings() {
@@ -306,7 +305,7 @@ class WeDevs_FB_Group_To_WP {
 
         $count = $this->insert_posts( $group_posts, $group_id );
 
-        printf( '%d posts imported', $count );
+        // printf( '%d posts imported', $count );
     }
     
     function fetch_stream( $url ) {
@@ -342,9 +341,10 @@ class WeDevs_FB_Group_To_WP {
                 $post_id = $this->insert_post( $fb_post, $group_id );
                 if (property_exists($fb_post, 'comments')) {
                     $comment_id = $this->insert_comments($post_id, $fb_post->comments->data);
+                    self::log('debug','comment is being inserted with DBID '.$comment_id);
                 }
                 
-                self::log('debug','comment is being inserted with DBID '.$comment_id);
+                
                 if ( $post_id ) {
                     $count++;
                 }
@@ -472,7 +472,7 @@ class WeDevs_FB_Group_To_WP {
         // self::log('debug', print_r($fb_post, TRUE));
         // var_dump( $meta );
 
-        self::log('debug','post is being inserted');
+        // self::log('debug','post is being inserted');
         return $post_id;
     }
 
@@ -537,9 +537,27 @@ class WeDevs_FB_Group_To_WP {
             $all_posts = $query->get_posts();
 
             foreach ($all_posts as $post) {
+                $c_query = new WP_Comment_Query();
+                $comments = $c_query->query(array('post_id'=>$post->ID));
+                self::log('debug', print_r($comments, TRUE));
+                if ($comments) {
+                    foreach($comments as $comment) {
+
+                        delete_comment_meta($comment->comment_ID,'_fb_author_id');
+                        delete_comment_meta($comment->comment_ID,'_fb_author_name');
+                        delete_comment_meta($comment->comment_ID,'_fb_comment_id');
+                        wp_delete_comment($comment->comment_ID, true);
+                    }
+                }
+                delete_post_meta($post->ID, '_fb_author_id');
+                delete_post_meta($post->ID, '_fb_author_name');
+                delete_post_meta($post->ID, '_fb_link');
+                delete_post_meta($post->ID, '_fb_group_id');
+                delete_post_meta($post->ID, '_fb_post_id');
                 wp_delete_post( $post->ID, true );
             }
         }
+
     }
     // this function adds our custom page to the home page.
     function my_get_posts( $query ) {
