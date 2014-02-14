@@ -201,9 +201,20 @@ class WeDevs_FB_Group_To_WP {
     */
     function publish_post() {
         if ( isset( $_GET['fb_post_publish'] ) ) {
-            $post = wp_update_post(array('ID' => $_GET['fb_post_publish'], 'post_status' => 'publish'));
+            
+            // $my_post = array(
+            //   'ID'           => $_GET['fb_post_publish'],
+            //   'post_status'  => 'publish',
+            //   'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
+            // );
+            wp_publish_post($_GET['fb_post_publish']);
+            wp_set_object_terms( $_GET['fb_post_publish'], array(get_cat_ID('Cardiff Start Facebook Posts')), 'category' );
+
             // self::log('debug', print_r($_GET, TRUE));
             // $this->send_mail();
+        }
+        if ( isset( $_GET['fb_send_mail'] ) ) {
+            $this->send_mail();
         }
     }
     function send_mail() {
@@ -392,7 +403,7 @@ class WeDevs_FB_Group_To_WP {
 
         $postarr = array(
             'post_type' => $this->post_type,
-            'post_status' => 'draft',
+            'post_status' => 'publish',
             'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
             'post_author' => 1,
             'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( $fb_post->updated_time ) ),
