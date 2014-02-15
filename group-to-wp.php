@@ -302,7 +302,7 @@ class WeDevs_FB_Group_To_WP {
         $group_posts = $decoded->data;
         $paging = $decoded->paging;
 
-        $count = $this->insert_posts( $group_posts, $group_id );
+        $count = $this->insert_posts( $group_posts, $group_id, 'draft' );
 
         // printf( '%d posts imported', $count );
     }
@@ -335,7 +335,7 @@ class WeDevs_FB_Group_To_WP {
             
             // echo  count($group_posts)."<br>";
 
-            $count += $this->insert_posts( $group_posts, $group_id );
+            $count += $this->insert_posts( $group_posts, $group_id, 'publish' );
 
         } while (property_exists($decoded, 'paging') && $url = $decoded->paging->next);
 
@@ -368,12 +368,12 @@ class WeDevs_FB_Group_To_WP {
      * @param array $group_posts
      * @return int
      */
-    function insert_posts( $group_posts, $group_id ) {
+    function insert_posts( $group_posts, $group_id, $status ) {
         $count = 0;
         
         if ( $group_posts ) {
             foreach ($group_posts as $fb_post) {
-                $post_id = $this->insert_post( $fb_post, $group_id );
+                $post_id = $this->insert_post( $fb_post, $group_id, $status);
                 if (property_exists($fb_post, 'comments')) {
                     $comments = $this->insert_comments($post_id, $fb_post->comments->data);
                 }
@@ -427,7 +427,7 @@ class WeDevs_FB_Group_To_WP {
      * @param int $group_id
      * @return int|WP_Error
      */
-    function insert_post( $fb_post, $group_id ) {
+    function insert_post( $fb_post, $group_id, $status ) {
 
         // bail out if the post already exists
         if ( $this->is_post_exists( $fb_post->actions[0]->link )) {
