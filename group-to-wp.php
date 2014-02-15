@@ -306,6 +306,42 @@ class WeDevs_FB_Group_To_WP {
 
         // printf( '%d posts imported', $count );
     }
+
+   function do_import_all() {
+        
+        $option = $this->get_settings();
+        
+        if ( !$option ) {
+            return;
+        }
+
+        $access_token = $option['app_id'] . '|' . $option['app_secret'];
+        $group_id = $option['group_id'];
+        $previous = "";
+        $group_posts = array();
+        $pages = 1;
+        $count = 0;
+
+        $url = 'https://graph.facebook.com/' . $group_id . '/feed/?limit=250&access_token=' . $access_token;
+        // echo $url;
+        do {
+            $json_posts = $this->fetch_stream( $url );
+            if ( !$json_posts ) {
+                return;
+            }
+
+            $decoded = json_decode( $json_posts );
+            $group_posts = $decoded->data;
+            
+            // echo  count($group_posts)."<br>";
+
+            $count += $this->insert_posts( $group_posts, $group_id );
+
+        } while (property_exists($decoded, 'paging') && $url = $decoded->paging->next);
+
+
+        printf( '(%d new posts imported)', $count );
+    }
     
     function fetch_stream( $url ) {
         self::log( 'debug', 'Fetching data from facebook' );
@@ -362,7 +398,8 @@ class WeDevs_FB_Group_To_WP {
     function is_post_exists( $fb_link_id ) {
         global $wpdb;
 
-        $row = $wpdb->get_row( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE guid = %s AND post_status = 'publish'", $fb_link_id ) );
+        // $row = $wpdb->get_row( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE guid = %s AND post_status = 'publish'", $fb_link_id ) );
+        $row = $wpdb->get_row( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE guid = %s", $fb_link_id ) );
 
         if ( $row ) {
             return true;
@@ -416,8 +453,10 @@ class WeDevs_FB_Group_To_WP {
 
         switch ($fb_post->type) {
             case 'status':
+
                 $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->message ), 6, '...' );
                 $postarr['post_content'] = $fb_post->message;
+            
                 break;
 
             case 'photo':
@@ -433,7 +472,12 @@ class WeDevs_FB_Group_To_WP {
                 break;
 
             case 'link':
-                parse_str( $fb_post->picture, $parsed_link );
+
+                $parsed_link = false;
+
+                if (property_exists($fb_post, 'picture')){
+                    parse_str( $fb_post->picture, $parsed_link );
+                }
 
                 $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->message ), 6, '...' );
                 $postarr['post_content'] = '<p>' . $fb_post->message . '</p>';

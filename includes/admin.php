@@ -68,20 +68,58 @@ class WeDevs_FB_Group_To_WP_Admin {
                 'name' => 'group_id',
                 'label' => __( 'Facebook Group ID', 'fbgr2wp'),
                 'default' => '',
-                'desc' => __( 'Add your facebook group ID. e.g: 241884142616448' )
+                'desc' => __( 'Add your facebook group ID. e.g: 100274573409031' )
             )
         );
 
         return $settings_fields;
     }
 
+    function current_action() {
+        if ( isset( $_REQUEST['action'] ) && -1 != $_REQUEST['action'] )
+            return $_REQUEST['action'];
+
+        if ( isset( $_REQUEST['action2'] ) && -1 != $_REQUEST['action2'] )
+            return $_REQUEST['action2'];
+
+        return false;
+    }
+
+    function process_given_actions()
+    {
+        try {
+            switch ($this->current_action()){
+                case 'fullImport':
+                    // die('fullImport');
+                    $wp_fb_import = WeDevs_FB_Group_To_WP::init();
+                    $wp_fb_import->do_import_all();
+                    break;
+            }
+        } catch (Exception $e){
+            $this->addNotice('error', $e->getMessage());
+        }
+    }
+
     function settings_page() {
+
+        $this->process_given_actions();
+
         echo '<div class="wrap">';
+        
         settings_errors();
 
         $this->settings_api->show_navigation();
         $this->settings_api->show_forms();
 
-        echo '</div>';
+        echo "<div class='metabox-holder'>
+                <div class='postbox'>
+                    <form method='post'>
+                    <h3>Master Actions</h3>
+                        <input type='hidden' name='action' value='fullImport'/>
+                        <table class='form-table'><tbody><tr valign='top'><th scope='row'>Retrive All Historical Data</th><td><input class='button button-primary' type='submit' name='doaction2' value='Perform Master Import'/></td></tr></tbody></table>
+                    </form>
+                </div>
+            </div>
+        </div>";
     }
 }
