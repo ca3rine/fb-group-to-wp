@@ -443,6 +443,10 @@ class WeDevs_FB_Group_To_WP {
             'guid' => $fb_post->actions[0]->link
         );
 
+        if (!property_exists($fb_post, 'message')) {
+            return;
+        }
+
         $meta = array(
             '_fb_author_id' => $fb_post->from->id,
             '_fb_author_name' => $fb_post->from->name,
@@ -484,7 +488,7 @@ class WeDevs_FB_Group_To_WP {
 
                 if ( !empty( $parsed_link['url']) ) {
                     $postarr['post_content'] .= sprintf( '<a href="%s"><img src="%s"></a>', $fb_post->link, $parsed_link['url'] );
-                } else {
+                } else if (property_exists($fb_post, 'name')) {
                     $postarr['post_content'] .= sprintf( '<a href="%s">%s</a>', $fb_post->link, $fb_post->name );
                 }
 
