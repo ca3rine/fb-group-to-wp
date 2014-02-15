@@ -434,7 +434,7 @@ class WeDevs_FB_Group_To_WP {
 
         $postarr = array(
             'post_type' => $this->post_type,
-            'post_status' => 'draft',
+            'post_status' => $status,
             'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
             'post_author' => 1,
             'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( $fb_post->updated_time ) ),
