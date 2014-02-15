@@ -317,12 +317,10 @@ class WeDevs_FB_Group_To_WP {
 
         $access_token = $option['app_id'] . '|' . $option['app_secret'];
         $group_id = $option['group_id'];
-        $previous = "";
-        $group_posts = array();
-        $pages = 1;
+        
         $count = 0;
 
-        $url = 'https://graph.facebook.com/' . $group_id . '/feed/?limit=250&access_token=' . $access_token;
+        $url = 'https://graph.facebook.com/' . $group_id . '/feed/?limit=50&access_token=' . $access_token;
         // echo $url;
         do {
             $json_posts = $this->fetch_stream( $url );
