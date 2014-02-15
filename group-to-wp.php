@@ -320,7 +320,7 @@ class WeDevs_FB_Group_To_WP {
         
         $count = 0;
 
-        $url = 'https://graph.facebook.com/' . $group_id . '/feed/?limit=50&access_token=' . $access_token;
+        $url = 'https://graph.facebook.com/' . $group_id . '/feed/?limit=25&access_token=' . $access_token;
         // echo $url;
         do {
             $json_posts = $this->fetch_stream( $url );
@@ -348,7 +348,8 @@ class WeDevs_FB_Group_To_WP {
         $json_posts = wp_remote_retrieve_body( $request );
 
         if ( is_wp_error( $request ) ) {
-            self::log( 'error', 'Fetching failed with code. WP_Error' );
+            $error_message = $request->get_error_message();
+            self::log( 'error', 'Fetching failed with code. WP_Error '.$error_message );
             return;
         }
         
@@ -372,9 +373,6 @@ class WeDevs_FB_Group_To_WP {
         if ( $group_posts ) {
             foreach ($group_posts as $fb_post) {
                 $post_id = $this->insert_post( $fb_post, $group_id, $status);
-                if (property_exists($fb_post, 'comments')) {
-                    $comments = $this->insert_comments($post_id, $fb_post->comments->data);
-                }
                 if ( $post_id ) {
                     $count++;
                 }
@@ -393,13 +391,17 @@ class WeDevs_FB_Group_To_WP {
      * @param string $fb_link_id facebook post link
      * @return boolean
      */
-    function is_post_exists( $fb_link_id ) {
+    function is_post_exists( $fb_post ) {
         global $wpdb;
 
         // $row = $wpdb->get_row( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE guid = %s AND post_status = 'publish'", $fb_link_id ) );
-        $row = $wpdb->get_row( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE guid = %s", $fb_link_id ) );
+        $row = $wpdb->get_row( $wpdb->prepare( "SELECT ID FROM $wpdb->posts WHERE guid = %s", $fb_post->actions[0]->link  ) );
 
         if ( $row ) {
+            //post exists so we need to update comments
+            if (property_exists($fb_post, 'comments')) {
+                $comments = $this->insert_comments($row->ID, $fb_post->comments->data);
+            }
             return true;
         }
 
@@ -410,7 +412,6 @@ class WeDevs_FB_Group_To_WP {
         global $wpdb;
 
         $row = $wpdb->get_row( $wpdb->prepare( "SELECT meta_id FROM $wpdb->commentmeta WHERE meta_key = '_fb_comment_id' AND meta_value = %s", $fb_comment_id) );
-
         if ( $row ) {
             return true;
         }
@@ -428,7 +429,7 @@ class WeDevs_FB_Group_To_WP {
     function insert_post( $fb_post, $group_id, $status ) {
 
         // bail out if the post already exists
-        if ( $this->is_post_exists( $fb_post->actions[0]->link )) {
+        if ( $this->is_post_exists( $fb_post)) {
             return;
         }
 
@@ -508,6 +509,10 @@ class WeDevs_FB_Group_To_WP {
             foreach ($meta as $key => $value) {
                 update_post_meta( $post_id, $key, $value );
             }
+            //post is new so we need to insert comments
+            if (property_exists($fb_post, 'comments')) {
+                $comments = $this->insert_comments($post_id, $fb_post->comments->data);
+            }
         }
 
         // var_dump( $fb_post );
@@ -523,9 +528,8 @@ class WeDevs_FB_Group_To_WP {
         
         if ( $fb_comments ) {
             foreach ($fb_comments as $fb_comment) {
-                $comment_id = $this->insert_comment($post_id, $fb_comment );
-                
 
+                $comment_id = $this->insert_comment($post_id, $fb_comment );
                 if ( $comment_id ) {
                     $count++;
                 }
