@@ -102,14 +102,16 @@ class WeDevs_FB_Group_To_WP_Admin {
 
     function settings_page() {
 
-        $this->process_given_actions();
+        
 
         echo '<div class="wrap">';
-        
+
         settings_errors();
 
         $this->settings_api->show_navigation();
         $this->settings_api->show_forms();
+
+        $this->process_given_actions();
 
         echo "<div class='metabox-holder'>
                 <div class='postbox'>
