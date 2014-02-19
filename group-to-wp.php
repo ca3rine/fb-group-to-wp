@@ -73,15 +73,17 @@ class WeDevs_FB_Group_To_WP {
         add_action( 'init', array( $this, 'debug_run' ) );
         add_action('init', array($this, 'publish_post'));
         add_action( 'init', array( $this, 'register_post_type' ) );
+        add_action('plugins_loaded',array($this, 'add_categories_to_cpt'));
         add_action( 'fbgr2wp_import', array( $this, 'do_import' ) );
-
         add_filter( 'the_content', array( $this, 'the_content' ) );
         add_filter( 'pre_get_posts', array($this, 'my_get_posts') );
         if ( is_admin() ) {
             new WeDevs_FB_Group_To_WP_Admin();
         }
     }
-
+    public function add_categories_to_cpt(){
+        register_taxonomy_for_object_type('category', 'fb_group_post');
+    }
     /**
      * Registers our custom post type
      * 
@@ -151,7 +153,6 @@ class WeDevs_FB_Group_To_WP {
 
         return $instance;
     }
-
     /**
      * Placeholder for activation function
      *
@@ -206,7 +207,6 @@ class WeDevs_FB_Group_To_WP {
               'post_status'  => 'publish',
             );
             //update the custom post type with this category and append it, since as a draft it has not category.
-            wp_set_object_terms( $_GET['fb_post_publish'], array(get_cat_ID('Cardiff Start Facebook Posts')), 'category',true );
             //publish the post
             wp_update_post($my_post);
         }
@@ -439,7 +439,8 @@ class WeDevs_FB_Group_To_WP {
             'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
             'post_author' => 1,
             'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( $fb_post->updated_time ) ),
-            'guid' => $fb_post->actions[0]->link
+            'guid' => $fb_post->actions[0]->link,
+            'comment_status' => 'open'
         );
 
         if (!property_exists($fb_post, 'message')) {
@@ -605,8 +606,11 @@ class WeDevs_FB_Group_To_WP {
     }
     // this function adds our custom page to the home page.
     function my_get_posts( $query ) {
-        if ($query->is_main_query())
+        if ( (is_home() || is_category()) && $query->is_main_query()) {
+
             $query->set( 'post_type', array( 'post', 'fb_group_post' ) );
+            
+        }
         return $query;
     }
     /**
