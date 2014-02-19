@@ -1,17 +1,15 @@
 <?php
 /*
 Plugin Name: Facebook Group to WordPress importer
-Plugin URI: http://tareq.wedevs.com/
 Description: Import facebook group posts to WordPress
 Version: 0.1
-Author: Tareq Hasan
-Author URI: http://tareq.wedevs.com/
+Author: Tharshan Muthulingam, Daniel Koehler and Tareq Hasan
 License: GPL2
 */
 
 /**
  * Copyright (c) 2014 Tareq Hasan (email: tareq@wedevs.com). All rights reserved.
- *
+ * Modifications made by Tharshan Muthulingam and Daniel Koehler
  * Released under the GPL license
  * http://www.opensource.org/licenses/gpl-license.php
  *
@@ -73,7 +71,7 @@ class WeDevs_FB_Group_To_WP {
         add_action( 'init', array( $this, 'debug_run' ) );
         add_action('init', array($this, 'publish_post'));
         add_action( 'init', array( $this, 'register_post_type' ) );
-        add_action('plugins_loaded',array($this, 'add_categories_to_cpt'));
+        add_action('init',array($this, 'add_categories_to_cpt'));
         add_action( 'fbgr2wp_import', array( $this, 'do_import' ) );
         add_filter( 'the_content', array( $this, 'the_content' ) );
         add_filter( 'pre_get_posts', array($this, 'my_get_posts') );
@@ -245,7 +243,7 @@ class WeDevs_FB_Group_To_WP {
             add_filter( 'wp_mail_content_type', function($content_type){
                 return 'text/html';
             });
-            // wp_mail( $multiple_to_recipients, $count_posts.' Cardiff Start Facebook Posts', $content );
+            wp_mail( $multiple_to_recipients, $count_posts.' Cardiff Start Facebook Posts', $content );
 
             // Reset content-type to avoid conflicts -- http://core.trac.wordpress.org/ticket/23578
             remove_filter( 'wp_mail_content_type', function($content_type){
@@ -500,7 +498,9 @@ class WeDevs_FB_Group_To_WP {
         }
 
         $post_id = wp_insert_post( $postarr );
-
+        if ($status == 'draft')  {
+            wp_set_object_terms( $post_id, array(get_cat_ID('Cardiff Start Facebook Posts')), 'category',true );
+        }
         if ( $post_id && !is_wp_error( $post_id ) ) {
 
             if ( $fb_post->type !== 'status' ) {
