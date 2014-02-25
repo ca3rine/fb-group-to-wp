@@ -39,7 +39,6 @@ if ( !defined( 'ABSPATH' ) ) exit;
 if ( is_admin() ) {
     require_once dirname( __FILE__ ) . '/includes/admin.php';
 }
-// Cardiff Start GID: 100274573409031
 // WeDevs_FB_Group_To_WP::init()->trash_all();
 
 /**
@@ -73,6 +72,7 @@ class WeDevs_FB_Group_To_WP {
         add_action( 'init', array( $this, 'register_post_type' ) );
         add_action('init',array($this, 'add_categories_to_cpt'));
         add_action( 'fbgr2wp_import', array( $this, 'do_import' ) );
+        add_action( 'fbgr2wp_mailer', array( $this, 'send_mail' ) );
         add_filter( 'the_content', array( $this, 'the_content' ) );
         add_filter( 'pre_get_posts', array($this, 'my_get_posts') );
         if ( is_admin() ) {
@@ -160,6 +160,9 @@ class WeDevs_FB_Group_To_WP {
         if ( false == wp_next_scheduled( 'fbgr2wp_import' ) ){
             wp_schedule_event( time(), 'hourly', 'fbgr2wp_import' );
         }
+        if (false == wp_next_scheduled('fbgr2wp_mailer')) {
+            wp_schedule_event( time(), 'daily', 'fbgr2wp_mailer' );
+        }
         wp_create_category('Cardiff Start Facebook Posts');
     }
 
@@ -170,7 +173,7 @@ class WeDevs_FB_Group_To_WP {
      */
     public function deactivate() {
         wp_clear_scheduled_hook( 'fbgr2wp_import' );
-        $this->trash_all(); //FIX ME. This is just for development.
+        // $this->trash_all(); //FIX ME. This is just for development.
     }
 
     /**
@@ -237,7 +240,7 @@ class WeDevs_FB_Group_To_WP {
             );
             $content = str_replace($find, $search, $html);
             $multiple_to_recipients = array(
-                'tharshan09@gmail.com'
+                'stephen@cardiffstart.com'
             );
 
             add_filter( 'wp_mail_content_type', function($content_type){

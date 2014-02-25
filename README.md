@@ -24,5 +24,7 @@ If you want to contribute on this project, you are more than welcome.
 
 ## Authors
 [Tareq Hasan](http://tareq.wedevs.com)
+
 [Tharshan Muthulingam](http://github.com/viperfx)
+
 [DanielKoehler](http://github.com/DanielKoehler)
