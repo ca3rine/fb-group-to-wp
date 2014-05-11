@@ -345,7 +345,7 @@ class WeDevs_FB_Group_To_WP {
     function fetch_stream( $url ) {
         self::log( 'debug', 'Fetching data from facebook' );
         
-        $request = wp_remote_get( $url );
+        $request = wp_remote_get( $url , array( 'timeout' => 120)); //increase the timeout for those groups with more data.
         $json_posts = wp_remote_retrieve_body( $request );
 
         if ( is_wp_error( $request ) ) {
