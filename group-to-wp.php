@@ -548,7 +548,7 @@ class WeDevs_FB_Group_To_WP {
 
 
 
-                $postarr['post_content'] = 'type: video <p>'.$fb_post->message.'</p>';
+                $postarr['post_content'] = '<p>'.$fb_post->message.'</p>';
 
 // maybe not this part
                 if ( !empty( $parsed_link['url']) ) {
