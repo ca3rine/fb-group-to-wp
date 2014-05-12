@@ -246,7 +246,7 @@ class WeDevs_FB_Group_To_WP {
             );
             $content = str_replace($find, $search, $html);
             $multiple_to_recipients = array(
-                'ca3rine@gmail.com'
+                $option['email_to']
             );
 
             add_filter( 'wp_mail_content_type', function($content_type){
@@ -450,7 +450,7 @@ class WeDevs_FB_Group_To_WP {
             'comment_status' => 'open'
         );
 
-        if (!property_exists($fb_post, 'message')) {
+        if (!property_exists($fb_post, 'message') && !property_exists($fb_post, 'picture') ) {
             return;
         }
 

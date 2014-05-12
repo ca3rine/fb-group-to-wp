@@ -75,6 +75,12 @@ class WeDevs_FB_Group_To_WP_Admin {
                 'label' => __( 'Default Category', 'fbgr2wp'),
                 'default' => '',
                 'desc' => __( 'What category would you like to add the posts to?' )
+            ),
+        array(
+                'name' => 'email_to',
+                'label' => __( 'Auto Email To', 'fbgr2wp'),
+                'default' => '',
+                'desc' => __( 'If you want to backup the posts to an email account' )
             )
         );
 
