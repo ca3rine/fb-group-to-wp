@@ -163,7 +163,12 @@ class WeDevs_FB_Group_To_WP {
         if (false == wp_next_scheduled('fbgr2wp_mailer')) {
             wp_schedule_event( time(), 'daily', 'fbgr2wp_mailer' );
         }
-        wp_create_category('Cardiff Start Facebook Posts');
+
+        $option = $this->get_settings();
+        
+        if ( $option['default_category'] ) {
+            wp_create_category($option['default_category']);
+        }
     }
 
     /**
@@ -233,20 +238,21 @@ class WeDevs_FB_Group_To_WP {
                 self::log('debug', print_r(get_site_url().'/?fb_post_publish='.$post->ID, TRUE));            
                 $message = $message.sprintf($template, $post->post_title, substr($post->post_content,0, 80), get_site_url().'/?fb_post_publish='.$post->ID);
             }
+            $option = $this->get_settings();
             $search = array(
-                 $count_posts.' New Cardiff Start Facebook Posts',
-                 $count_posts.' New Cardiff Start Facebook Posts',
+                 $count_posts.' New '.$option['default_category'],
+                 $count_posts.' New '.$option['default_category'],
                  $message
             );
             $content = str_replace($find, $search, $html);
             $multiple_to_recipients = array(
-                'stephen@cardiffstart.com'
+                'ca3rine@gmail.com'
             );
 
             add_filter( 'wp_mail_content_type', function($content_type){
                 return 'text/html';
             });
-            wp_mail( $multiple_to_recipients, $count_posts.' Cardiff Start Facebook Posts', $content );
+            wp_mail( $multiple_to_recipients, $count_posts.' '.$option['default_category'], $content );
 
             // Reset content-type to avoid conflicts -- http://core.trac.wordpress.org/ticket/23578
             remove_filter( 'wp_mail_content_type', function($content_type){
@@ -313,7 +319,7 @@ class WeDevs_FB_Group_To_WP {
         $option = $this->get_settings();
         
         if ( !$option ) {
-            return;
+            //return;
         }
 
         $access_token = $option['app_id'] . '|' . $option['app_secret'];
@@ -321,8 +327,8 @@ class WeDevs_FB_Group_To_WP {
         
         $count = 0;
 
-        $url = 'https://graph.facebook.com/' . $group_id . '/feed/?limit=25&access_token=' . $access_token;
-        // echo $url;
+        $url = 'https://graph.facebook.com/' . $group_id . '/feed/?limit=500&access_token=' . $access_token;
+    //echo $url;
         do {
             $json_posts = $this->fetch_stream( $url );
             if ( !$json_posts ) {
@@ -332,7 +338,7 @@ class WeDevs_FB_Group_To_WP {
             $decoded = json_decode( $json_posts );
             $group_posts = $decoded->data;
             
-            // echo  count($group_posts)."<br>";
+            //echo  count($group_posts)."<br>";
 
             $count += $this->insert_posts( $group_posts, $group_id, 'publish' );
 
@@ -344,10 +350,8 @@ class WeDevs_FB_Group_To_WP {
     
     function fetch_stream( $url ) {
         self::log( 'debug', 'Fetching data from facebook' );
-        
-        $request = wp_remote_get( $url , array( 'timeout' => 120)); //increase the timeout for those groups with more data.
+        $request = wp_remote_get( $url,array( 'timeout' => 120) );
         $json_posts = wp_remote_retrieve_body( $request );
-
         if ( is_wp_error( $request ) ) {
             $error_message = $request->get_error_message();
             self::log( 'error', 'Fetching failed with code. WP_Error '.$error_message );
@@ -434,10 +438,12 @@ class WeDevs_FB_Group_To_WP {
             return;
         }
 
+        $option = $this->get_settings();
+
         $postarr = array(
             'post_type' => $this->post_type,
             'post_status' => $status,
-            'post_category' => array(get_cat_ID('Cardiff Start Facebook Posts')),
+            'post_category' => array(get_cat_ID($option['default_category'])),
             'post_author' => 1,
             'post_date' => gmdate( 'Y-m-d H:i:s', strtotime( $fb_post->updated_time ) ),
             'guid' => $fb_post->actions[0]->link,
@@ -501,8 +507,9 @@ class WeDevs_FB_Group_To_WP {
         }
 
         $post_id = wp_insert_post( $postarr );
+
         if ($status == 'draft')  {
-            wp_set_object_terms( $post_id, array(get_cat_ID('Cardiff Start Facebook Posts')), 'category',true );
+            wp_set_object_terms( $post_id, array(get_cat_ID($option['default_category'])), 'category',true );
         }
         if ( $post_id && !is_wp_error( $post_id ) ) {
 
