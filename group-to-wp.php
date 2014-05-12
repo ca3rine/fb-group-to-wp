@@ -25,7 +25,6 @@ License: GPL2
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
@@ -465,7 +464,7 @@ class WeDevs_FB_Group_To_WP {
         switch ($fb_post->type) {
             case 'status':
 
-                $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->message ), 6, '...' );
+                $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->message ), 30, '...' );
                 $postarr['post_content'] = $fb_post->message;
             
                 break;
@@ -473,11 +472,17 @@ class WeDevs_FB_Group_To_WP {
             case 'photo':
 
                 if ( !isset( $fb_post->message ) ) {
-                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->story ), 6, '...' );
+                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->story ), 30, '...' );
                     $postarr['post_content'] = sprintf( '<p>%1$s</p> <div class="image-wrap"><img src="%2$s" alt="%1$s" /></div>', $fb_post->story, $fb_post->picture );
+                    $postarr['post_content'] .= sprintf('<h3>%s</h3>',$fb_post->name);
+                    $postarr['post_content'] .= sprintf('<i>%s</i>',$fb_post->caption);
+                    $postarr['post_content'] .= sprintf('<p>%s</p>',$fb_post->description);
                 } else {
-                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->message ), 6, '...' );
+                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->message ), 30, '...' );
                     $postarr['post_content'] = sprintf( '<p>%1$s</p> <div class="image-wrap"><img src="%2$s" alt="%1$s" /></div>', $fb_post->message, $fb_post->picture );
+                    $postarr['post_content'] .= sprintf('<h3>%s</h3>',$fb_post->name);
+                    $postarr['post_content'] .= sprintf('<i>%s</i>',$fb_post->caption);
+                    $postarr['post_content'] .= sprintf('<p>%s</p>',$fb_post->description);
                 }
 
                 break;
@@ -485,18 +490,84 @@ class WeDevs_FB_Group_To_WP {
             case 'link':
 
                 $parsed_link = false;
-
+               
                 if (property_exists($fb_post, 'picture')){
                     parse_str( $fb_post->picture, $parsed_link );
                 }
 
-                $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->message ), 6, '...' );
-                $postarr['post_content'] = '<p>' . $fb_post->message . '</p>';
+               if ( !isset( $fb_post->message ) ) {
+                    // find name, caption, description sequentially for a title
+                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->name ), 30, '...' );
+                } else if(!property_exists($fb_post, 'name') && !isset($fb_post->name)) {
+                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->caption ), 30, '...' );
+                } else if(!property_exists($fb_post, 'caption') && !isset($fb_post->caption)) {
+                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->description ), 30, '...' );
+                } else if(!property_exists($fb_post, 'description') && !isset($fb_post->description)) {
+                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->link ), 30, '...' );
+                }
+
+
+
+                $postarr['post_content'] = '<p>'.$fb_post->message.'</p>';
 
                 if ( !empty( $parsed_link['url']) ) {
                     $postarr['post_content'] .= sprintf( '<a href="%s"><img src="%s"></a>', $fb_post->link, $parsed_link['url'] );
-                } else if (property_exists($fb_post, 'name')) {
-                    $postarr['post_content'] .= sprintf( '<a href="%s">%s</a>', $fb_post->link, $fb_post->name );
+                }
+
+                if (property_exists($fb_post, 'name')) {       
+                    $postarr['post_content'] .= sprintf( '<h3><a href="%s">%s</a></h3>', $fb_post->link, $fb_post->name );
+                }
+
+                if (property_exists($fb_post, 'caption')) {       
+                    $postarr['post_content'] .= sprintf( '<i>%s</i>', $fb_post->caption );
+                }
+
+                if (property_exists($fb_post, 'description')) {       
+                    $postarr['post_content'] .= sprintf( '<p>%s</p>', $fb_post->description );
+                }
+
+
+                break;
+            case 'video':
+                $parsed_link = false;
+               
+                if (property_exists($fb_post, 'picture')){
+                    parse_str( $fb_post->picture, $parsed_link );
+                }
+
+               if ( !isset( $fb_post->message ) ) {
+                    // find name, caption, description sequentially for a title
+                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->name ), 30, '...' );
+                } else if(!property_exists($fb_post, 'name') && !isset($fb_post->name)) {
+                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->caption ), 30, '...' );
+                } else if(!property_exists($fb_post, 'caption') && !isset($fb_post->caption)) {
+                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->description ), 30, '...' );
+                } else if(!property_exists($fb_post, 'description') && !isset($fb_post->description)) {
+                    $postarr['post_title'] = wp_trim_words( strip_tags( $fb_post->link ), 30, '...' );
+                }
+
+
+
+                $postarr['post_content'] = 'type: video <p>'.$fb_post->message.'</p>';
+
+// maybe not this part
+                if ( !empty( $parsed_link['url']) ) {
+                    $postarr['post_content'] .= sprintf( '<a href="%s"><img src="%s"></a>', $fb_post->link, $parsed_link['url'] );
+                }
+
+// remove until here
+
+                if (property_exists($fb_post, 'source')) {       
+                    $postarr['post_content'] .= sprintf( '<a href="%s">Click to play video.</a>', $fb_post->source );
+                    // need a video player for this part of the code
+                }
+
+                if (property_exists($fb_post, 'name')) {       
+                    $postarr['post_content'] .= sprintf( '<h3><a href="%s">%s</a></h3>', $fb_post->link, $fb_post->name );
+                }
+
+                if (property_exists($fb_post, 'description')) {       
+                    $postarr['post_content'] .= sprintf( '<p>%s</p>', $fb_post->description );
                 }
 
                 break;
